@@ -3,7 +3,9 @@ library(tidyr)
 library(sparklyr)
 library(quantmod)
 library(mleap)
+library(rpivotTable)
 library(dplyr)
+
 
 
 fundamentals = read.csv("C:/Users/Joao/Google Drive/Trading Algo/fundamentals.csv") %>%
@@ -31,12 +33,9 @@ stocks = lapply(stocks.raw, function(x) {
   mutate(company = gsub(".Adjusted","",company))
 
 
-save(stocks, file = "C:/Users/Joao/Google Drive/Trading Algo/stocks.Rdata")
-
 
 
 simple.return <- function(x,shift) {x/lag(x,shift)-1}
-
 
 dt <- fundamentals %>%
   left_join(stocks) %>%
@@ -46,6 +45,25 @@ dt <- fundamentals %>%
   ungroup() %>%
   filter(!is.na(target.measure)) %>%
   filter(complete.cases(.))
+
+
+
+# Exploratory analysis: cross section fundamentals deciles vs return
+decile.fun <- function(v)
+{
+  trunc(v*10)+1
+}
+
+dt %>%
+  group_by(date) %>%
+  mutate_if(is.numeric,funs(decile.fun((rank(.,na.last="keep")-1)/sum(!is.na(.))))) %>%
+  ungroup %>%
+  mutate(target.measure = dt$target.measure) %>%
+  rpivotTable(cols = "Revenues",
+              aggregatorName = "Median",
+              vals = "target.measure",
+              rendererName = "Line Chart")
+  
 
 
 
@@ -76,7 +94,6 @@ pipeline <- ml_pipeline(sc) %>%
 pipeline_model <- pipeline %>%
   ml_fit(dt_tbl)
 
-pred_lr <- ml_predict(pipeline_model, dt_tbl)
   
 
 
