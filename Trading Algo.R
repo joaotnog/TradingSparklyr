@@ -46,6 +46,8 @@ dt <- fundamentals %>%
   filter(complete.cases(.)) %>%
   group_by(company) %>%
   # mutate_at(colnames(dt)[2:34], na.locf0) %>%
+  mutate_at(colnames(dt)[2:34],funs(Trend=mean(diff(rank(.,lag(.,1),lag(.,2),lag(.,3),lag(.,4))),na.rm=TRUE)) %>%
+  mutate_at(colnames(dt)[2:34],funs(Shock=./lag(.))) %>%
   mutate(return = simple.return(price,1)) %>%
   ungroup() %>%
   filter(!is.na(target.measure)) %>%
